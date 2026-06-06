@@ -116,16 +116,15 @@ pub const ZigEnum = struct {
     pub fn createEnumDef(self: *const ZigEnum, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
         errdefer buffer.deinit(allocator);
-        var writer = buffer.writer(allocator);
 
-        try writer.print("pub const {s} = enum(i32) {{\n", .{self.const_name});
+        try buffer.print(allocator, "pub const {s} = enum(i32) {{\n", .{self.const_name});
 
         // Write entries with consistent formatting
         for (self.entries.items) |entry| {
-            try writer.print("    {s} = {d},\n", .{ entry.constName, entry.value });
+            try buffer.print(allocator, "    {s} = {d},\n", .{ entry.constName, entry.value });
         }
 
-        try writer.writeAll("};\n");
+        try buffer.appendSlice(allocator, "};\n");
         return buffer.toOwnedSlice(allocator);
     }
 

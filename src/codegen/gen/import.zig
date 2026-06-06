@@ -132,7 +132,7 @@ pub fn importResolve(
     const imported_file_rel_path_from_proto_root = if (well_known_types.isWellKnownImport(import_path_in_proto_file))
         try allocator.dupe(u8, import_path_in_proto_file)
     else
-        try std.fs.path.relativePosix(allocator, proto_root, import_path_in_proto_file);
+        try std.fs.path.relativePosix(allocator, "/", proto_root, import_path_in_proto_file);
     defer allocator.free(imported_file_rel_path_from_proto_root);
 
     // Generate output path for the imported file
@@ -154,7 +154,7 @@ pub fn importResolve(
     } else {
         // Different directory - compute path relative to the importing file's output location
         // First, get the output path for the current file (the one doing the importing)
-        const current_file_rel_to_proto_root = try std.fs.path.relativePosix(allocator, proto_root, proto_file_path);
+        const current_file_rel_to_proto_root = try std.fs.path.relativePosix(allocator, "/", proto_root, proto_file_path);
         defer allocator.free(current_file_rel_to_proto_root);
 
         const current_file_out_path = try paths.outputPath(allocator, current_file_rel_to_proto_root, target_root);
@@ -164,7 +164,7 @@ pub fn importResolve(
         const current_out_dir = std.fs.path.dirname(current_file_out_path) orelse ".";
 
         // Compute relative path from current file's directory to imported file
-        const rel_import_path = try std.fs.path.relativePosix(allocator, current_out_dir, out_path);
+        const rel_import_path = try std.fs.path.relativePosix(allocator, "/", current_out_dir, out_path);
         defer allocator.free(rel_import_path);
 
         return try ZigImport.init(allocator, src, name, rel_import_path);

@@ -52,9 +52,9 @@ fn matchGlob(path: []const u8, pattern: []const u8) bool {
     return pattern_idx == pattern.len and path_idx == path.len;
 }
 
-pub fn findProtoFiles(allocator: std.mem.Allocator, basePath: []const u8, ignore_masks: ?[]const []const u8) !std.ArrayList([]const u8) {
-    var dir = try std.fs.cwd().openDir(basePath, .{ .iterate = true });
-    defer dir.close();
+pub fn findProtoFiles(io: std.Io, allocator: std.mem.Allocator, basePath: []const u8, ignore_masks: ?[]const []const u8) !std.ArrayList([]const u8) {
+    var dir = try std.Io.Dir.cwd().openDir(io, basePath, .{ .iterate = true });
+    defer dir.close(io);
 
     var walker = try dir.walk(allocator);
     defer walker.deinit();
@@ -67,11 +67,11 @@ pub fn findProtoFiles(allocator: std.mem.Allocator, basePath: []const u8, ignore
         paths.deinit(allocator);
     }
 
-    while (try walker.next()) |entry| {
+    while (try walker.next(io)) |entry| {
         if (matchesAnyMask(entry.path, ignore_masks)) continue;
 
         if (entry.kind == .file and std.mem.eql(u8, std.fs.path.extension(entry.basename), ".proto")) {
-            const path = try dir.realpathAlloc(allocator, entry.path);
+            const path = try std.fs.path.resolve(allocator, &.{ basePath, entry.path });
             try paths.append(allocator, path);
         }
     }
@@ -176,10 +176,9 @@ pub fn findRoot(
 }
 
 test "walk" {
-    var path_buffer: [std.fs.max_path_bytes]u8 = undefined;
-    const path = try std.fs.realpath(".", &path_buffer);
+    const io = std.Io.Threaded.global_single_threaded.io();
 
-    var entries = try findProtoFiles(std.testing.allocator, path, null);
+    var entries = try findProtoFiles(io, std.testing.allocator, ".", null);
     defer {
         for (entries.items) |entry| {
             std.testing.allocator.free(entry);
@@ -190,7 +189,7 @@ test "walk" {
     try std.testing.expect(entries.items.len > 0);
     for (entries.items) |entry| {
         try std.testing.expect(entry.len > 0);
-        try std.testing.expectStringStartsWith(entry, path);
+        try std.testing.expectStringEndsWith(entry, ".proto");
     }
 }
 
