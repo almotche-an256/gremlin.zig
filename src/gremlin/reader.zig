@@ -43,26 +43,55 @@ pub const Reader = struct {
         if (tag_data.value >> 3 > std.math.maxInt(i32)) {
             return Error.InvalidTag;
         }
+        // ProtoWireType is exhaustive (0..5); wire types 6 and 7 are invalid, and
+        // @enumFromInt on them would be UB (ReleaseFast) / a panic (Debug). Reject
+        // before converting.
+        const wire_raw = @as(u3, @truncate(tag_data.value));
+        if (wire_raw > 5) return Error.InvalidTag;
 
         return ProtoTag{
             .number = @as(ProtoWireNumber, @intCast(tag_data.value >> 3)),
-            .wire = @as(ProtoWireType, @enumFromInt(@as(u3, @truncate(tag_data.value)))),
+            .wire = @as(ProtoWireType, @enumFromInt(wire_raw)),
             .size = tag_data.size,
         };
     }
 
     /// Skip data of given wire type at offset
     pub fn skipData(self: Reader, offset: usize, wire: ProtoWireType) Error!usize {
+        return self.skipDataDepth(offset, wire, 0);
+    }
+
+    // Bound group nesting so a malicious payload of `startGroup` tags can't drive
+    // unbounded recursion → stack exhaustion. The dufi schema uses no groups; this
+    // is defense-in-depth.
+    const max_group_depth = 100;
+
+    fn skipDataDepth(self: Reader, offset: usize, wire: ProtoWireType, depth: u8) Error!usize {
+        if (depth > max_group_depth) return Error.InvalidTag;
         switch (wire) {
             .varint => {
                 const size = try self.getVarIntSize(offset);
                 return offset + size;
             },
-            .fixed32 => return offset + 4,
-            .fixed64 => return offset + 8,
+            // Reject truncated fixed-width fields instead of advancing past the
+            // buffer end. `hasNext(offset, N-1)` checks indices offset..offset+N-1.
+            .fixed32 => {
+                if (!self.hasNext(offset, 3)) return Error.InvalidData;
+                return offset + 4;
+            },
+            .fixed64 => {
+                if (!self.hasNext(offset, 7)) return Error.InvalidData;
+                return offset + 8;
+            },
             .bytes => {
                 const size_data = try self.readVarIntAt(offset);
-                return offset + size_data.size + @as(usize, @intCast(size_data.value));
+                const start = offset + size_data.size;
+                // Overflow-safe: `value` is an attacker-controlled varint, so
+                // `start + value` could wrap. Validate the skipped region fits.
+                if (start > self.buf.len or size_data.value > @as(u64, self.buf.len - start)) {
+                    return Error.InvalidData;
+                }
+                return start + @as(usize, @intCast(size_data.value));
             },
             .startGroup => {
                 var current_offset = offset;
@@ -71,7 +100,7 @@ pub const Reader = struct {
                     current_offset += tag.size;
 
                     if (tag.wire == .endGroup) return current_offset;
-                    current_offset = try self.skipData(current_offset, tag.wire);
+                    current_offset = try self.skipDataDepth(current_offset, tag.wire, depth + 1);
                 }
             },
             else => return Error.InvalidTag,
@@ -115,10 +144,17 @@ pub const Reader = struct {
     pub fn readBytes(self: Reader, offset: usize) Error!types.SizedBytes {
         const size_data = try self.readVarIntAt(offset);
         const start = offset + size_data.size;
-        const end = start + @as(usize, @intCast(size_data.value));
+        // Overflow-safe bound: `value` is an attacker-controlled varint (up to
+        // 2^64-1), so `start + value` would wrap and yield a huge OOB slice.
+        // `start <= buf.len` holds (readVarIntAt kept the varint in-buf), so compare
+        // against the remaining length instead of adding.
+        if (start > self.buf.len or size_data.value > @as(u64, self.buf.len - start)) {
+            return Error.InvalidData;
+        }
+        const len: usize = @intCast(size_data.value);
         return .{
-            .value = self.buf[start..end],
-            .size = size_data.size + @as(usize, @intCast(size_data.value)),
+            .value = self.buf[start .. start + len],
+            .size = size_data.size + len,
         };
     }
 
@@ -236,7 +272,9 @@ pub const Reader = struct {
 
     /// Check if offset + size is within buffer bounds
     pub fn hasNext(self: Reader, offset: usize, size: usize) bool {
-        return (offset + size) < self.buf.len;
+        // Overflow-safe form of `(offset + size) < buf.len` (offset/size are
+        // attacker-influenced, so the add could wrap on a crafted payload).
+        return offset < self.buf.len and size < self.buf.len - offset;
     }
 
     /// Read zigzag encoded signed varint at offset
