@@ -296,7 +296,10 @@ pub const ZigMapField = struct {
     /// Generate code for value variable declaration
     fn valueReaderVar(self: *const ZigMapField) ![]const u8 {
         if (self.value_type.is_bytes) {
-            return try self.allocator.dupe(u8, "var value: []const u8 = undefined;");
+            // proto3 default for an omitted map value of string/bytes type is the
+            // empty slice — must be a real default (not `undefined`) so the entry
+            // can be yielded on key-only (see the yield condition in the reader).
+            return try self.allocator.dupe(u8, "var value: []const u8 = &[_]u8{};");
         } else if (self.value_type.is_scalar) {
             return try std.fmt.allocPrint(self.allocator, "var value: {s} = {s};", .{ scalarZigType(self.value_type.src), scalarDefaultValue(self.value_type.src) });
         } else if (self.value_type.isEnum()) {
@@ -447,6 +450,15 @@ pub const ZigMapField = struct {
         defer self.allocator.free(value_reader_var);
         defer self.allocator.free(value_read);
 
+        // proto3 omits a map value equal to its default, so a key-only entry is
+        // valid (value = default). Yield on `has_key` for value types that have a
+        // real default in `value_reader_var` (bytes/scalar/enum); message values
+        // have no safe default, so keep requiring `has_value` for them.
+        const yield_cond = if (self.value_type.is_bytes or self.value_type.is_scalar or self.value_type.isEnum())
+            "has_key"
+        else
+            "has_key and has_value";
+
         return std.fmt.allocPrint(self.allocator,
             \\pub fn {s}(self: *{s}) gremlin.Error!?{s} {{
             \\    if (self.{s}) |current_offset| {{
@@ -505,7 +517,7 @@ pub const ZigMapField = struct {
             \\            self.{s} = null;
             \\        }}
             \\
-            \\        if (has_key and has_value) {{
+            \\        if ({s}) {{
             \\            return {s}{{ .key = key, .value = value }};
             \\        }}
             \\        return null;
@@ -527,6 +539,7 @@ pub const ZigMapField = struct {
             self.wire_const_full_name,
             self.reader_offset_field_name,
             self.reader_offset_field_name,
+            yield_cond,
             self.reader_entry_type_name,
         });
     }
