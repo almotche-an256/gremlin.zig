@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) void {
         const codegen_test = b.addTest(.{
             .name = "codegen",
             .root_module = b.createModule(.{
-                .root_source_file = b.path("step.zig"),
+                .root_source_file = b.path("codegen_main.zig"),
                 .target = target,
                 .optimize = optimize,
             }),
@@ -73,8 +73,9 @@ pub fn build(b: *std.Build) void {
     {
         const proto_gen_step = b.step("proto-gen", "Generate protobuf files");
 
-        const google_protobuf = ProtoGenStep.create(
+        const google_protobuf = ProtoGenStep.createFromSource(
             b,
+            b.path("codegen_main.zig"),
             .{
                 .name = "test_data/google protobuf",
                 .proto_sources = b.path("test_data/google"),
@@ -83,8 +84,9 @@ pub fn build(b: *std.Build) void {
         );
         proto_gen_step.dependOn(&google_protobuf.step);
 
-        const gogofast_protobuf = ProtoGenStep.create(
+        const gogofast_protobuf = ProtoGenStep.createFromSource(
             b,
+            b.path("codegen_main.zig"),
             .{
                 .name = "test_data/gogofast protobuf",
                 .proto_sources = b.path("test_data/gogofast"),
@@ -93,8 +95,9 @@ pub fn build(b: *std.Build) void {
         );
         proto_gen_step.dependOn(&gogofast_protobuf.step);
 
-        const ambg_ref_protobuf = ProtoGenStep.create(
+        const ambg_ref_protobuf = ProtoGenStep.createFromSource(
             b,
+            b.path("codegen_main.zig"),
             .{
                 .name = "test_data/ambg_ref protobuf",
                 .proto_sources = b.path("test_data/ambg_ref"),
@@ -140,11 +143,14 @@ pub fn build(b: *std.Build) void {
         const run_benchmark = b.addRunArtifact(benchmark_exe);
         run_benchmark.step.dependOn(&install_benchmark.step);
 
-        if (b.args) |args| {
-            run_benchmark.addArgs(args);
-        } else {
-            run_benchmark.addArg("1000"); // Default to 1000 iterations
-        }
+        // Zig 0.17 removed `b.args`; expose the iteration count as a build
+        // option instead: `zig build run-benchmark -Diterations=5000`.
+        const benchmark_iters = b.option(
+            []const u8,
+            "iterations",
+            "Benchmark iteration count (default 1000)",
+        ) orelse "1000";
+        run_benchmark.addArg(benchmark_iters);
 
         const run_benchmark_step = b.step("run-benchmark", "Run serialization benchmark");
         run_benchmark_step.dependOn(&run_benchmark.step);

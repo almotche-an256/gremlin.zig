@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const benchmark = @import("gen/google/benchmark.proto.zig");
 const unittest = @import("gen/google/unittest.proto.zig");
 const unittest_import = @import("gen/google/unittest_import.proto.zig");
@@ -128,48 +129,48 @@ fn updateGoldenMessage(msg: *unittest.TestAllTypes, repeated_storage: []?unittes
 fn createDeepNested() benchmark.DeepNested {
     const items_level1 = [_]?benchmark.Level1{
         benchmark.Level1{
-        .id = 11,
-        .title = "item1_top_level",
-        .score = 2.34,
-        .nested = benchmark.Level2{
-            .id = 110,
-            .description = "nested_in_top_item1",
-            .payload = "some payload data",
-            .nested = benchmark.Level3{
-                .id = 1100,
-                .name = "deeply_nested_top_item1",
+            .id = 11,
+            .title = "item1_top_level",
+            .score = 2.34,
+            .nested = benchmark.Level2{
+                .id = 110,
+                .description = "nested_in_top_item1",
+                .payload = "some payload data",
+                .nested = benchmark.Level3{
+                    .id = 1100,
+                    .name = "deeply_nested_top_item1",
+                },
             },
         },
+        benchmark.Level1{
+            .id = 12,
+            .title = "item2_top_level",
+            .score = 3.45,
+            .nested = benchmark.Level2{
+                .id = 120,
+                .description = "nested_in_top_item2",
+                .payload = "more payload data here",
+            },
         },
         benchmark.Level1{
-        .id = 12,
-        .title = "item2_top_level",
-        .score = 3.45,
-        .nested = benchmark.Level2{
-            .id = 120,
-            .description = "nested_in_top_item2",
-            .payload = "more payload data here",
-        },
+            .id = 13,
+            .title = "item3_top_level",
+            .score = 4.56,
         },
         benchmark.Level1{
-        .id = 13,
-        .title = "item3_top_level",
-        .score = 4.56,
+            .id = 14,
+            .title = "item4_top_level",
+            .score = 5.67,
+            .nested = benchmark.Level2{
+                .id = 140,
+                .description = "nested_in_top_item4",
+                .payload = "final payload data",
+            },
         },
         benchmark.Level1{
-        .id = 14,
-        .title = "item4_top_level",
-        .score = 5.67,
-        .nested = benchmark.Level2{
-            .id = 140,
-            .description = "nested_in_top_item4",
-            .payload = "final payload data",
-        },
-        },
-        benchmark.Level1{
-        .id = 15,
-        .title = "item5_top_level",
-        .score = 6.78,
+            .id = 15,
+            .title = "item5_top_level",
+            .score = 6.78,
         },
     };
 
@@ -193,23 +194,23 @@ fn createDeepNested() benchmark.DeepNested {
 
     const items_level3 = [_]?benchmark.Level3{
         benchmark.Level3{
-        .id = 31,
-        .name = "item1_nested",
-        .nested = benchmark.Level4{
-            .value = 310,
-            .data = "nested_item1_data",
-            .numbers = &[_]i32{ 1, 2, 3, 4, 5 },
-        },
+            .id = 31,
+            .name = "item1_nested",
+            .nested = benchmark.Level4{
+                .value = 310,
+                .data = "nested_item1_data",
+                .numbers = &[_]i32{ 1, 2, 3, 4, 5 },
+            },
             .items = &sub_items1,
         },
         benchmark.Level3{
-        .id = 32,
-        .name = "item2_nested",
-        .nested = benchmark.Level4{
-            .value = 320,
-            .data = "nested_item2_data",
-            .numbers = &[_]i32{ 6, 7, 8, 9, 10 },
-        },
+            .id = 32,
+            .name = "item2_nested",
+            .nested = benchmark.Level4{
+                .value = 320,
+                .data = "nested_item2_data",
+                .numbers = &[_]i32{ 6, 7, 8, 9, 10 },
+            },
             .items = &sub_items2,
         },
         benchmark.Level3{
@@ -234,32 +235,32 @@ fn createDeepNested() benchmark.DeepNested {
 
     const items_level2 = [_]?benchmark.Level2{
         benchmark.Level2{
-        .id = 21,
-        .description = "item1_level2_with_payload",
-        .payload = "payload for item 1",
-        .nested = benchmark.Level3{
-            .id = 210,
-            .name = "nested_in_item1",
-            .nested = benchmark.Level4{
-                .value = 2100,
-                .data = "deep_nested",
-                .numbers = &[_]i32{ 100, 200, 300 },
+            .id = 21,
+            .description = "item1_level2_with_payload",
+            .payload = "payload for item 1",
+            .nested = benchmark.Level3{
+                .id = 210,
+                .name = "nested_in_item1",
+                .nested = benchmark.Level4{
+                    .value = 2100,
+                    .data = "deep_nested",
+                    .numbers = &[_]i32{ 100, 200, 300 },
+                },
             },
         },
+        benchmark.Level2{
+            .id = 22,
+            .description = "item2_level2_with_payload",
+            .payload = "payload for item 2 with more data",
+            .nested = benchmark.Level3{
+                .id = 220,
+                .name = "nested_in_item2",
+            },
         },
         benchmark.Level2{
-        .id = 22,
-        .description = "item2_level2_with_payload",
-        .payload = "payload for item 2 with more data",
-        .nested = benchmark.Level3{
-            .id = 220,
-            .name = "nested_in_item2",
-        },
-        },
-        benchmark.Level2{
-        .id = 23,
-        .description = "item3_level2_with_payload",
-        .payload = "payload for item 3",
+            .id = 23,
+            .description = "item3_level2_with_payload",
+            .payload = "payload for item 3",
         },
         benchmark.Level2{
             .id = 24,
@@ -304,7 +305,11 @@ fn createDeepNested() benchmark.DeepNested {
 // ============================================================================
 
 fn formatWithUnderscores(n: usize, buf: *[32]u8) []const u8 {
-    const s = std.fmt.bufPrint(buf, "{d}", .{n}) catch unreachable;
+    // Format into a separate scratch buffer first: re-grouping in place would
+    // write underscores into `buf` while still reading digits from a slice of
+    // `buf` (source and destination alias), corrupting not-yet-read digits.
+    var digits: [32]u8 = undefined;
+    const s = std.fmt.bufPrint(&digits, "{d}", .{n}) catch unreachable;
     if (s.len <= 3) {
         @memcpy(buf[0..s.len], s);
         return buf[0..s.len];
@@ -323,18 +328,102 @@ fn formatWithUnderscores(n: usize, buf: *[32]u8) []const u8 {
 
     return buf[0..result_len];
 }
-
 fn getCpuInfo(allocator: std.mem.Allocator) ![]const u8 {
-    const result = std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "sysctl", "-n", "machdep.cpu.brand_string" },
-    }) catch {
-        return allocator.dupe(u8, "Unknown");
-    };
-    defer allocator.free(result.stdout);
-    defer allocator.free(result.stderr);
+    // Cross-platform CPU brand detection. Each branch is comptime-pruned, so
+    // only the relevant one is compiled (libc is referenced only on Darwin).
+    var buf: [128]u8 = undefined;
 
-    return allocator.dupe(u8, std.mem.trim(u8, result.stdout, &std.ascii.whitespace));
+    // x86_64: the brand string comes straight from CPUID extended leaves
+    // 0x8000_0002..4 — an OS-independent CPU instruction, so this one branch
+    // covers Linux, Windows, macOS (Intel) and BSD with no OS API at all.
+    if (comptime builtin.cpu.arch == .x86_64) {
+        if (cpuidBrand(&buf)) |brand| return allocator.dupe(u8, brand);
+    }
+
+    // Non-x86 Linux (e.g. ARM / Raspberry Pi): parse /proc/cpuinfo.
+    if (comptime builtin.os.tag == .linux) {
+        if (procCpuBrand(&buf)) |brand| return allocator.dupe(u8, brand);
+    }
+
+    // macOS / iOS, incl. Apple Silicon: sysctl brand node (libc, which Darwin
+    // always links).
+    if (comptime builtin.os.tag.isDarwin()) {
+        var size: usize = buf.len;
+        if (std.c.sysctlbyname("machdep.cpu.brand_string", &buf, &size, null, 0) == 0 and size > 1) {
+            return allocator.dupe(u8, std.mem.sliceTo(buf[0..size], 0));
+        }
+    }
+
+    return allocator.dupe(u8, "Unknown");
+}
+
+/// Read the CPU brand from CPUID extended leaves 0x8000_0002..4 (x86_64). Writes
+/// into `out`, returns the trimmed slice, or null if the leaves are unsupported.
+fn cpuidBrand(out: *[128]u8) ?[]const u8 {
+    if (cpuid(0x8000_0000)[0] < 0x8000_0004) return null;
+    var raw: [48]u8 = undefined;
+    inline for (0..3) |i| {
+        const regs = cpuid(0x8000_0002 + @as(u32, i));
+        inline for (0..4) |r| {
+            std.mem.writeInt(u32, raw[i * 16 + r * 4 ..][0..4], regs[r], .little);
+        }
+    }
+    const brand = std.mem.trim(u8, std.mem.sliceTo(&raw, 0), " ");
+    if (brand.len == 0) return null;
+    @memcpy(out[0..brand.len], brand);
+    return out[0..brand.len];
+}
+
+/// Execute CPUID for `leaf` (subleaf 0) and return {eax, ebx, ecx, edx}.
+fn cpuid(leaf: u32) [4]u32 {
+    var eax: u32 = undefined;
+    var ebx: u32 = undefined;
+    var ecx: u32 = undefined;
+    var edx: u32 = undefined;
+    asm volatile ("cpuid"
+        : [eax] "={eax}" (eax),
+          [ebx] "={ebx}" (ebx),
+          [ecx] "={ecx}" (ecx),
+          [edx] "={edx}" (edx),
+        : [leaf] "{eax}" (leaf),
+    );
+    return .{ eax, ebx, ecx, edx };
+}
+
+/// Parse the CPU brand from /proc/cpuinfo (Linux). Writes into `out`.
+fn procCpuBrand(out: *[128]u8) ?[]const u8 {
+    const io = std.Io.Threaded.global_single_threaded.io();
+    // /proc files report size 0, so alloc-by-size reads return nothing; read
+    // into a fixed buffer to EOF instead. The first match is in the first block.
+    var file_buf: [1 << 16]u8 = undefined;
+    const content = std.Io.Dir.cwd().readFile(io, "/proc/cpuinfo", &file_buf) catch return null;
+    var lines = std.mem.splitScalar(u8, content, '\n');
+    while (lines.next()) |line| {
+        // x86 kernels use "model name"; many ARM kernels use "Model"/"Hardware".
+        if (std.mem.startsWith(u8, line, "model name") or
+            std.mem.startsWith(u8, line, "Model") or
+            std.mem.startsWith(u8, line, "Hardware"))
+        {
+            const colon = std.mem.indexOfScalar(u8, line, ':') orelse continue;
+            const name = std.mem.trim(u8, line[colon + 1 ..], " \t");
+            if (name.len > 0) {
+                const n = @min(name.len, out.len);
+                @memcpy(out[0..n], name[0..n]);
+                return out[0..n];
+            }
+        }
+    }
+    return null;
+}
+
+/// Monotonic nanosecond clock. Zig 0.17 removed std.time.nanoTimestamp; timing
+/// moved under std.Io.Clock (which needs an `io`). For a benchmark we can use
+/// the process-global single-threaded io rather than thread it through every
+/// timing call. `.awake` is the CLOCK_MONOTONIC equivalent.
+fn nowNanos() i128 {
+    const io = std.Io.Threaded.global_single_threaded.io();
+    const ts = std.Io.Clock.now(.awake, io);
+    return @as(i128, ts.nanoseconds);
 }
 
 fn getCpuCores() usize {
@@ -349,13 +438,13 @@ fn benchmarkMarshalDeepNested(msg: benchmark.DeepNested, data: []u8, iterations:
         msg.encodeTo(&w);
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         var w = gremlin.Writer.init(data);
         msg.encodeTo(&w);
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -369,12 +458,12 @@ fn benchmarkUnmarshalDeepNested(data: []const u8, allocator: std.mem.Allocator, 
         _ = benchmark.DeepNestedReader.init(data) catch unreachable;
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         _ = benchmark.DeepNestedReader.init(data) catch unreachable;
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -391,7 +480,7 @@ fn benchmarkLazyReadDeepNested(data: []const u8, allocator: std.mem.Allocator, i
         _ = decoded.getActive();
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         const decoded = benchmark.DeepNestedReader.init(data) catch unreachable;
@@ -399,7 +488,7 @@ fn benchmarkLazyReadDeepNested(data: []const u8, allocator: std.mem.Allocator, i
         _ = decoded.getRootName();
         _ = decoded.getActive();
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -422,7 +511,7 @@ fn benchmarkDeepAccessDeepNested(data: []const u8, allocator: std.mem.Allocator,
         _ = n4.getValue();
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         const decoded = benchmark.DeepNestedReader.init(data) catch unreachable;
@@ -436,7 +525,7 @@ fn benchmarkDeepAccessDeepNested(data: []const u8, allocator: std.mem.Allocator,
         const n4 = n3.getNested() catch unreachable;
         _ = n4.getValue();
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -451,14 +540,14 @@ fn benchmarkMarshalGolden(msg: *unittest.TestAllTypes, repeated_storage: []?unit
         msg.encodeTo(&w);
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < @as(i32, @intCast(iterations))) : (i += 1) {
         updateGoldenMessage(msg, repeated_storage, i);
         var w = gremlin.Writer.init(data);
         msg.encodeTo(&w);
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -472,12 +561,12 @@ fn benchmarkUnmarshalGolden(data: []const u8, allocator: std.mem.Allocator, iter
         _ = unittest.TestAllTypesReader.init(data) catch unreachable;
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         _ = unittest.TestAllTypesReader.init(data) catch unreachable;
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -494,7 +583,7 @@ fn benchmarkLazyReadGolden(data: []const u8, allocator: std.mem.Allocator, itera
         _ = decoded.getOptionalString();
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         const decoded = unittest.TestAllTypesReader.init(data) catch unreachable;
@@ -502,7 +591,7 @@ fn benchmarkLazyReadGolden(data: []const u8, allocator: std.mem.Allocator, itera
         _ = decoded.getOptionalInt64();
         _ = decoded.getOptionalString();
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -524,7 +613,7 @@ fn benchmarkDeepAccessGolden(data: []const u8, allocator: std.mem.Allocator, ite
         _ = import_msg.getD();
     }
 
-    const start = std.time.nanoTimestamp();
+    const start = nowNanos();
     i = 0;
     while (i < iterations) : (i += 1) {
         const decoded = unittest.TestAllTypesReader.init(data) catch unreachable;
@@ -537,7 +626,7 @@ fn benchmarkDeepAccessGolden(data: []const u8, allocator: std.mem.Allocator, ite
         const import_msg = decoded.getOptionalImportMessage() catch unreachable;
         _ = import_msg.getD();
     }
-    const end = std.time.nanoTimestamp();
+    const end = nowNanos();
 
     const total_ns: i128 = end - start;
     return @intCast(@divTrunc(total_ns, @as(i128, @intCast(iterations))));
@@ -547,14 +636,12 @@ fn benchmarkDeepAccessGolden(data: []const u8, allocator: std.mem.Allocator, ite
 // Main
 // ============================================================================
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
 
-    // Parse command line arguments
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    // Parse command line arguments (Zig 0.17: argv comes from the Init param;
+    // std.process.argsAlloc was removed).
+    const args = try init.minimal.args.toSlice(init.arena.allocator());
 
     const iterations: usize = if (args.len >= 2)
         try std.fmt.parseInt(usize, args[1], 10)

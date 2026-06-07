@@ -16,6 +16,7 @@ pub fn build(b: *std.Build) void {
 
     const protobuf = ProtoGenStep.create(
         b,
+        gremlin_dep,
         .{
             .name = "example protobuf",
             .proto_sources = b.path("proto"),

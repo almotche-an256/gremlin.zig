@@ -12,7 +12,12 @@ Part of [NormaCore](https://github.com/norma-core/norma-core/) project.
 
 Single command setup:
 ```bash
+# for zig 0.16+
+zig fetch --save https://github.com/almotche-an256/gremlin.zig/archive/refs/heads/zig-0.16.tar.gz
+
+# for zig 0.15
 zig fetch --save https://github.com/norma-core/gremlin.zig/archive/refs/heads/master.zip
+
 ```
 
 This command will:
@@ -20,7 +25,16 @@ This command will:
 2. Add it to your `build.zig.zon`
 3. Generate the correct dependency hash
 
-In your `build.zig`:
+> **Zig compatibility:** builds on Zig **0.16.0** and **0.17-dev**. Because Zig 0.17
+> removed in-process custom build steps (`makeFn`), code generation now runs as a
+> build-time executable invoked through a `Run` step. This changes the integration
+> slightly: **`create` now takes the gremlin dependency** as a second argument -
+> `ProtoGenStep.create(b, gremlin_dep, .{ ... })` - so the generator's source can be
+> located inside the gremlin package. You still depend on it via `dependOn(&protobuf.step)`.
+> (If you're upgrading from the old custom-step version, just add the `gremlin_dep`
+> argument to your existing `create` call.)
+
+In your `build.zig` (Zig 0.16+):
 ```zig
 const std = @import("std");
 const ProtoGenStep = @import("gremlin").ProtoGenStep;
@@ -43,6 +57,7 @@ pub fn build(b: *std.Build) void {
     // and output generated Zig code to src/gen/
     const protobuf = ProtoGenStep.create(
         b,
+        gremlin_dep,                             // Pass the gremlin dependency
         .{
             .name = "protobuf",                  // Name for the build step
             .proto_sources = b.path("proto"),    // Directory containing .proto files
@@ -73,6 +88,20 @@ pub fn build(b: *std.Build) void {
 }
 ```
 
+Key points for the 0.16+ setup:
+- `b.dependency("gremlin", .{ ... })` - fetched via the `zig-0.16` URL above.
+- `gremlin_dep.module("gremlin")` - the runtime module; add it to **every** module that
+  imports generated code (here, the exe's root module, since `src/main.zig` imports the
+  generated file).
+- `ProtoGenStep.create(b, gremlin_dep, .{ ... })` - note the **`gremlin_dep` argument**.
+- `step.dependOn(&protobuf.step)` - make anything that compiles generated code depend on
+  the codegen step, so the `.zig` files exist first (important on clean checkouts/CI).
+
+> **Using Zig 0.15?** Install from the `norma-core` master URL above and use the older
+> **two-argument** form instead - `ProtoGenStep.create(b, .{ ... })`, without `gremlin_dep`.
+> That version generates code via an in-process custom build step, which Zig 0.17 removed
+> (hence the Run-step rewrite and the extra `gremlin_dep` argument on 0.16+).
+
 ## Features
 
 - Zero dependencies
@@ -81,7 +110,7 @@ pub fn build(b: *std.Build) void {
 - Simple integration with Zig build system
 - Single allocation for serialization (including complex recursive messages)
 - Zero-allocation readers with lazy parsing - parses only required complex fields
-- Tested with Zig 0.15.2
+- Tested with Zig 0.16.0 (also builds on 0.17-dev)
 
 ## Performance
 
@@ -131,7 +160,7 @@ Deep nested message benchmarks (1409 bytes, 4+ levels deep) comparing gremlin.zi
 - Lazy Read: **0 allocations** (vs 9 allocations in gremlin_go)
 - Deep Access: **0 allocations** (vs 29 allocations in gremlin_go)
 
-*Benchmarks run with `--release=fast` with 10,000,000 iterations. Run `zig build run-benchmark -- 10000000` to reproduce.*
+*Benchmarks run with `--release=fast` with 10,000,000 iterations. Run `zig build run-benchmark -Diterations=10000000` to reproduce.*
 
 ## Ignore Patterns
 
@@ -140,6 +169,7 @@ The `ignore_masks` option allows you to exclude directories from proto file disc
 ```zig
 const protobuf = ProtoGenStep.create(
     b,
+    gremlin_dep,
     .{
         .name = "protobuf",
         .proto_sources = b.path("proto"),
@@ -233,7 +263,7 @@ pub fn main() !void {
         .tags = &[_]?[]const u8{ "admin", "verified" },
     };
     
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     const encoded = try user.encode(allocator);
     defer allocator.free(encoded);
